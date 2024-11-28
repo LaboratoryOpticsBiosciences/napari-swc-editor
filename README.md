@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/LaboratoryOpticsBiosciences/napari-swc-editor/branch/main/graph/badge.svg)](https://codecov.io/gh/LaboratoryOpticsBiosciences/napari-swc-editor)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-swc-editor)](https://napari-hub.org/plugins/napari-swc-editor)
 
-Use graph and shape layer to edit swc format
+Use point and shape layer to edit swc format in napari
 
 ----------------------------------
 

@@ -1,7 +1,7 @@
 [project]
 name = "napari-swc-editor"
 dynamic = ["version"]
-description = "Use graph and shape layer to edit swc format"
+description = "Use point and shape layer to edit swc format in napari"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
