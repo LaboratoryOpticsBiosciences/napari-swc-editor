@@ -27,13 +27,20 @@ contributions:
     - id: napari-swc-editor.make_qwidget
       python_name: napari_swc_editor:ExampleQWidget
       title: Make example QWidget
+    - id: napari-swc-editor.get_reader
+      python_name: napari_swc_editor._reader:napari_get_reader
+      title: Open data with napari-swc-reader
+  readers:
+    - command: napari-swc-editor.get_reader
+      accepts_directories: false
+      filename_patterns: ['*.swc']
   writers:
     - command: napari-swc-editor.write_multiple
       layer_types: ['image*','labels*']
       filename_extensions: []
     - command: napari-swc-editor.write_single_image
-      layer_types: ['image']
-      filename_extensions: ['.npy']
+      layer_types: ['points']
+      filename_extensions: ['.swc']
   sample_data:
     - command: napari-swc-editor.make_sample_data
       display_name: napari-swc-editor
