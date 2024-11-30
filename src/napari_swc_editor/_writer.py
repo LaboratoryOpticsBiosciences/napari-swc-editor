@@ -35,7 +35,8 @@ def write_single_image(path: str, data: Any, meta: dict) -> list[str]:
     [path] : A list containing the string path to the saved file.
     """
 
-    # implement your writer logic here ...
+    with open(path, "w") as text_file:
+        text_file.write(meta["metadata"]["raw_swc"])
 
     # return path to any file(s) that were successfully written
     return [path]
