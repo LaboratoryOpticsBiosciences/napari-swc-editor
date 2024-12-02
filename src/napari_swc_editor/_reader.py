@@ -75,6 +75,7 @@ def reader_function(path):
         add_kwargs_points = {
             "n_dimensional": True,
             "size": radius,
+            "blending": "additive",
             "metadata": {
                 "raw_swc": file_content,
                 "shape_layer": shape_layer,
