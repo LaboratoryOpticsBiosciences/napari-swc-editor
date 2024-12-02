@@ -3,6 +3,14 @@ import io
 import numpy as np
 import pandas as pd
 
+SWC_SYMBOL = {
+    0: "clobber", # undefined
+    1: "star", # soma
+    2: "disc", # axon
+    3: "triangle_down", # basal dendrite
+    4: "triangle_up", # apical dendrite
+}
+
 
 def parse_swc_content(file_content):
     """Parse a swc file and return a dataframe with the data.
@@ -46,6 +54,53 @@ def parse_swc_content(file_content):
 
     return df
 
+def structure_id_to_symbol(structure_ids, swc_structure=SWC_SYMBOL):
+    """Convert list structure id to a names
+
+    Parameters
+    ----------
+    structure_id : list
+        List of structure ids
+    swc_structure : dict
+        Dictionary with the structure id as key and the name as value
+        Default is SWC_STRUCTURE
+
+    Returns
+    -------
+    name : str
+        Name of the structure
+    """
+    
+    names = [swc_structure.get(structure_id, "x") for structure_id in structure_ids]
+
+    return names
+
+
+def symbol_to_structure_id(symbol, swc_structure=SWC_SYMBOL):
+    """Convert a symbol to a structure id
+
+    Parameters
+    ----------
+    symbol : str
+        Symbol of the structure
+    swc_structure : dict
+        Dictionary with the structure id as key and the name as value
+        Default is SWC_STRUCTURE
+
+    Returns
+    -------
+    structure_id : int
+        Id of the structure
+    """
+    
+    print(symbol)
+
+    structure_id = list(swc_structure.keys())[
+        list(swc_structure.values()).index(symbol)
+    ]
+
+    return structure_id
+
 
 def parse_data_from_swc_file(file_content):
     """Create layers from a swc file
@@ -63,14 +118,16 @@ def parse_data_from_swc_file(file_content):
         Radius of the nodes
     lines : np.ndarray
         All lines connecting the nodes
+    structure : np.ndarray
+        Structure of the nodes
     """
 
     df = parse_swc_content(file_content)
 
-    nodes, radius = create_point_data_from_swc_data(df)
+    nodes, radius, structure = create_point_data_from_swc_data(df)
     lines, _ = create_line_data_from_swc_data(df)
 
-    return nodes, radius, lines
+    return nodes, radius, lines, structure
 
 
 def create_point_data_from_swc_data(df):
@@ -83,6 +140,7 @@ def create_point_data_from_swc_data(df):
         - x: x coordinate of the node
         - y: y coordinate of the node
         - z: z coordinate of the node
+        - structure_id: id of the structure
         - r: radius of the node
 
     Returns
@@ -91,14 +149,18 @@ def create_point_data_from_swc_data(df):
         All positions of the nodes
     radius : np.ndarray
         Radius of the nodes
+    structure : np.ndarray
+        Structure of the nodes
     """
 
     radius = df["r"].values
+    
+    structure = df["structure_id"].values
 
     # for each node create a point
     nodes = df[["x", "y", "z"]].values
 
-    return nodes, radius
+    return nodes, radius, structure
 
 
 def create_line_data_from_swc_data(df):
@@ -181,7 +243,7 @@ def write_swc_content(df, swc_content=None):
     return new_swc_content
 
 
-def add_points(swc_content, new_positions, new_radius, swc_df=None):
+def add_points(swc_content, new_positions, new_radius, new_structure=0, swc_df=None):
     """Add a point to the swc content
 
     Parameters
@@ -192,6 +254,9 @@ def add_points(swc_content, new_positions, new_radius, swc_df=None):
         New positions to be added
     new_radius : np.ndarray
         Radius of the new positions
+    new_structure : np.ndarray
+        Structure of the new positions, see SWC_SYMBOL
+        Default is 0 (undefined)
     swc_df : pd.DataFrame
         Dataframe extracted from the swc file. Should have the following columns:
         - x: x coordinate of the node
@@ -214,7 +279,7 @@ def add_points(swc_content, new_positions, new_radius, swc_df=None):
 
     new_nodes = pd.DataFrame(new_positions, columns=["x", "y", "z"])
     new_nodes["r"] = new_radius
-    new_nodes["structure_id"] = 0  # 0 is undefined structure
+    new_nodes["structure_id"] = new_structure
     new_nodes["parent_treenode_id"] = -1
 
     if swc_df.size > 0:
@@ -495,3 +560,39 @@ def sort_edge_indices(swc_content, indices, swc_df=None):
     sorted_indices = np.sort(indices)
 
     return sorted_indices
+
+def update_node_properties(swc_content, indices, new_properties, swc_df=None):
+    """Update the properties of the nodes
+
+    Parameters
+    ----------
+    swc_content : str
+        Content of the swc file
+    indices : list of int
+        Indices of the points to be updated
+    new_properties : dict
+        Properties to be updated. Such as: `r` and `structure_id`
+    swc_df : pd.DataFrame, optional
+        Dataframe extracted from a swc file. Should have the following columns:
+        - treenode_id as index
+        - parent_treenode_id: id of the parent node
+
+    Returns
+    -------
+    new_swc_content : str
+        New content of the swc file
+    swc_df : pd.DataFrame
+        Dataframe extracted from the swc file
+    """
+
+    if swc_df is None:
+        swc_df = parse_swc_content(swc_content)
+
+    for key, value in new_properties.items():
+        swc_df.loc[indices, key] = value
+
+    new_swc_content = write_swc_content(swc_df, swc_content)
+    
+    print("updated properties")
+
+    return new_swc_content, swc_df
