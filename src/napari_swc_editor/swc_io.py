@@ -491,7 +491,7 @@ def remove_edge(swc_content, indices, swc_df=None):
 
     new_swc_content = write_swc_content(swc_df, swc_content)
 
-    return new_swc_content, new_lines, new_r
+    return new_swc_content, new_lines, new_r, swc_df
 
 
 def sort_edge_indices(swc_content, indices, swc_df=None):

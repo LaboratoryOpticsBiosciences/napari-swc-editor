@@ -38,7 +38,7 @@ def bind_layers_with_events(point_layer, shape_layer):
 
     point_layer.bind_key("l")(event_add_edge)
     point_layer.bind_key("Shift-l")(event_add_edge_wo_sort)
-    # point_layer.bind_key('u')(event_add_edge)
+    point_layer.bind_key("u")(event_remove_edge)
 
     point_layer.metadata["shape_layer"] = shape_layer
 
@@ -142,6 +142,8 @@ def event_add_edge_wo_sort(layer):
     layer : napari.layers.Points
         Points layer
     """
+    ### This function is not used in the current version of the plugin
+    ### Because napari does not support history of the selected points
     event_add_edge(layer, sort=False)
 
 
