@@ -66,7 +66,7 @@ def reader_function(path):
         with open(_path) as f:
             file_content = f.read()
 
-        nodes, radius, lines, structure = parse_data_from_swc_file(
+        points, radius, lines, structure = parse_data_from_swc_file(
             file_content
         )
 
@@ -87,7 +87,7 @@ def reader_function(path):
             },
         }
 
-        point_layer = viewer.add_points(nodes, **add_kwargs_points)
+        point_layer = viewer.add_points(points, **add_kwargs_points)
 
         bind_layers_with_events(point_layer, shape_layer)
 
