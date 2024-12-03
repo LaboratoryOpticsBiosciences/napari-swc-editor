@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/LaboratoryOpticsBiosciences/napari-swc-editor/branch/main/graph/badge.svg)](https://codecov.io/gh/LaboratoryOpticsBiosciences/napari-swc-editor)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-swc-editor)](https://napari-hub.org/plugins/napari-swc-editor)
 
-Use point and shape layer to edit swc format in napari
+Use point and shape layer to edit swc format in napari.
 
 ----------------------------------
 
@@ -20,6 +20,41 @@ https://github.com/napari/napari-plugin-template#getting-started
 and review the napari docs for plugin developers:
 https://napari.org/stable/plugins/index.html
 -->
+
+## Features
+
+### IO
+#### READER
+- Your .swc should follow the following specs: http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html
+- the reader will create 2 napari layer: `point_layer` and `shape_layer`. Only `point_layer` is interactive, `shape_layer` is used to render path between swc points.
+- The raw swc can be accessed in the point layer metadata. Such as `point_layer.metadata["raw_swc"]`
+- A `pd.DataFrame` object is also saved in the metadata: `point_layer.metadata["swc_data"]`
+#### WRITER
+- With the `point_layer` selected, you can use napari interface to save with `.swc` extension name.
+- You can also do it in command line: `napari.save_layers('test.swc', [point_layer])`
+### Napari Interface
+#### Structure ID and point symbol
+In swc, structure id allow to label the type of neuron structure the point belongs to. In this plugin by default, the points will follow this symbol mapping:
+```python
+SWC_SYMBOL = {
+    0: "clobber",  # undefined
+    1: "star",  # soma
+    2: "disc",  # axon
+    3: "triangle_down",  # basal dendrite
+    4: "triangle_up",  # apical dendrite
+}
+```
+![image](https://github.com/user-attachments/assets/618aa000-370d-43f9-8645-8a3b7e9b9739)
+
+#### SWC Edition
+**ALL INTERACTIONS ARE ONLY BOUND TO THE `point_layer`**
+**THERE IS NO CTRL-Z (please save your progress)**
+- **Add point**: You can edit the "r" and the "structure_id" using the `point_size` and `symbol` ![image](https://github.com/user-attachments/assets/44255691-ffa0-4f63-8368-499b0c8ff6a4)
+- **Remove point**: (Select the point and press `1` or `suppr` or `delete`) All the link pointing to this point will be removed
+- **Add edge**: Select 2 or more point(s) and press on your keyboard `l` (aka: link).
+- **Remove edge**: Select 1 or more point(s) and press on your keyboard `u` (aka: unlink).
+
+
 
 ## Installation
 
