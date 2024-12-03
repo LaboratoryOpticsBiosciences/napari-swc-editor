@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 
 SWC_SYMBOL = {
-    0: "clobber", # undefined
-    1: "star", # soma
-    2: "disc", # axon
-    3: "triangle_down", # basal dendrite
-    4: "triangle_up", # apical dendrite
+    0: "clobber",  # undefined
+    1: "star",  # soma
+    2: "disc",  # axon
+    3: "triangle_down",  # basal dendrite
+    4: "triangle_up",  # apical dendrite
 }
 
 
@@ -54,6 +54,7 @@ def parse_swc_content(file_content):
 
     return df
 
+
 def structure_id_to_symbol(structure_ids, swc_structure=SWC_SYMBOL):
     """Convert list structure id to a names
 
@@ -70,8 +71,10 @@ def structure_id_to_symbol(structure_ids, swc_structure=SWC_SYMBOL):
     name : str
         Name of the structure
     """
-    
-    names = [swc_structure.get(structure_id, "x") for structure_id in structure_ids]
+
+    names = [
+        swc_structure.get(structure_id, "x") for structure_id in structure_ids
+    ]
 
     return names
 
@@ -92,12 +95,10 @@ def symbol_to_structure_id(symbol, swc_structure=SWC_SYMBOL):
     structure_id : int
         Id of the structure
     """
-    
-    print(symbol)
 
-    structure_id = list(swc_structure.keys())[
-        list(swc_structure.values()).index(symbol)
-    ]
+    # invert the dictionary
+    swc_structure = {v: k for k, v in swc_structure.items()}
+    structure_id = [swc_structure.get(s, 0) for s in symbol]
 
     return structure_id
 
@@ -154,7 +155,7 @@ def create_point_data_from_swc_data(df):
     """
 
     radius = df["r"].values
-    
+
     structure = df["structure_id"].values
 
     # for each node create a point
@@ -243,7 +244,9 @@ def write_swc_content(df, swc_content=None):
     return new_swc_content
 
 
-def add_points(swc_content, new_positions, new_radius, new_structure=0, swc_df=None):
+def add_points(
+    swc_content, new_positions, new_radius, new_structure=0, swc_df=None
+):
     """Add a point to the swc content
 
     Parameters
@@ -561,6 +564,7 @@ def sort_edge_indices(swc_content, indices, swc_df=None):
 
     return sorted_indices
 
+
 def update_node_properties(swc_content, indices, new_properties, swc_df=None):
     """Update the properties of the nodes
 
@@ -589,10 +593,11 @@ def update_node_properties(swc_content, indices, new_properties, swc_df=None):
         swc_df = parse_swc_content(swc_content)
 
     for key, value in new_properties.items():
+        print(key, value)
         swc_df.loc[indices, key] = value
 
-    new_swc_content = write_swc_content(swc_df, swc_content)
-    
-    print("updated properties")
+    new_lines, new_r = create_line_data_from_swc_data(swc_df)
 
-    return new_swc_content, swc_df
+    new_swc_content = write_swc_content(swc_df, swc_content)
+
+    return new_swc_content, new_lines, new_r, swc_df

@@ -1,14 +1,14 @@
 from .swc_io import (
     add_edge,
-    remove_edge,
     add_points,
     get_treenode_id_from_index,
     move_points,
     parse_swc_content,
+    remove_edge,
     remove_points,
     sort_edge_indices,
-    update_node_properties,
     symbol_to_structure_id,
+    update_node_properties,
 )
 
 
@@ -92,12 +92,10 @@ def event_remove_points(event):
             new_lines, edge_width=new_r
         )
         event.source.metadata["swc_data"] = df
-        
-        
 
 
 def event_update_node_properties(event):
-    """Update the properties (`size` -> `radius` and `symbol` -> `structure_id`) 
+    """Update the properties (`size` -> `radius` and `symbol` -> `structure_id`)
     of a point to the swc content node
 
     Parameters
@@ -110,13 +108,15 @@ def event_update_node_properties(event):
     df = parse_swc_content(raw_swc)
 
     indices = get_treenode_id_from_index(list(event.source.selected_data), df)
-    
+
     structure_object = event.source.symbol[list(event.source.selected_data)]
-    structure_id = symbol_to_structure_id([structure.value for structure in structure_object])
-    
+    structure_id = symbol_to_structure_id(
+        [structure.value for structure in structure_object]
+    )
+
     properties = {
-        "radius": event.source.size[list(event.source.selected_data)],
-        "structure_id": structure_id
+        "r": event.source.size[list(event.source.selected_data)],
+        "structure_id": structure_id,
     }
 
     new_swc, new_lines, new_r, df = update_node_properties(

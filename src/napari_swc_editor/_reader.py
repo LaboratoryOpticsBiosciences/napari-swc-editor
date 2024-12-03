@@ -66,8 +66,10 @@ def reader_function(path):
         with open(_path) as f:
             file_content = f.read()
 
-        nodes, radius, lines, structure = parse_data_from_swc_file(file_content)
-        
+        nodes, radius, lines, structure = parse_data_from_swc_file(
+            file_content
+        )
+
         structure_symbol = structure_id_to_symbol(structure)
 
         shape_layer = viewer.add_shapes(
