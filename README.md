@@ -23,6 +23,12 @@ https://napari.org/stable/plugins/index.html
 
 ## Features
 
+
+https://github.com/user-attachments/assets/cba1820f-d0b5-436c-a981-62bae0e1a6ba
+
+
+
+
 ### IO
 #### READER
 - Your .swc should follow the following specs: http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html
