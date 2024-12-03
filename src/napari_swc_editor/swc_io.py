@@ -113,22 +113,22 @@ def parse_data_from_swc_file(file_content):
 
     Returns
     -------
-    nodes : np.ndarray
-        All positions of the nodes
+    points : np.ndarray
+        All positions of the points
     radius : np.ndarray
-        Radius of the nodes
+        Radius of the points
     lines : np.ndarray
-        All lines connecting the nodes
+        All lines connecting the points
     structure : np.ndarray
-        Structure of the nodes
+        Structure of the points
     """
 
     df = parse_swc_content(file_content)
 
-    nodes, radius, structure = create_point_data_from_swc_data(df)
+    points, radius, structure = create_point_data_from_swc_data(df)
     lines, _ = create_line_data_from_swc_data(df)
 
-    return nodes, radius, lines, structure
+    return points, radius, lines, structure
 
 
 def create_point_data_from_swc_data(df):
@@ -146,12 +146,12 @@ def create_point_data_from_swc_data(df):
 
     Returns
     -------
-    nodes : np.ndarray
-        All positions of the nodes
+    points : np.ndarray
+        All positions of the points
     radius : np.ndarray
-        Radius of the nodes
+        Radius of the points
     structure : np.ndarray
-        Structure of the nodes
+        Structure of the points
     """
 
     radius = df["r"].values
@@ -159,9 +159,9 @@ def create_point_data_from_swc_data(df):
     structure = df["structure_id"].values
 
     # for each node create a point
-    nodes = df[["x", "y", "z"]].values
+    points = df[["x", "y", "z"]].values
 
-    return nodes, radius, structure
+    return points, radius, structure
 
 
 def create_line_data_from_swc_data(df):
@@ -180,25 +180,25 @@ def create_line_data_from_swc_data(df):
     Returns
     -------
     lines : np.ndarray
-        All lines connecting the nodes
+        All lines connecting the points
     radius : np.ndarray
         Radius of the lines
     """
 
-    # for each node create a point
-    nodes = df[["x", "y", "z"]].values
+    # for each nodes create a point
+    points = df[["x", "y", "z"]].values
 
     # for each edge create a line
     edges = df["parent_treenode_id"].values
 
     # remove all soma nodes
-    nodes = nodes[edges != -1]
+    points = points[edges != -1]
     edges = edges[edges != -1]
 
     # for each id in edges, get the corresponding node according to its index
-    prev_node = df.loc[edges, ["x", "y", "z"]].values
+    prev_point = df.loc[edges, ["x", "y", "z"]].values
 
-    lines = np.array([nodes, prev_node])
+    lines = np.array([points, prev_point])
     lines = np.moveaxis(lines, 0, 1)
 
     radius = df.loc[edges, "r"].values
@@ -280,21 +280,21 @@ def add_points(
     if swc_df is None:
         swc_df = parse_swc_content(swc_content)
 
-    new_nodes = pd.DataFrame(new_positions, columns=["x", "y", "z"])
-    new_nodes["r"] = new_radius
-    new_nodes["structure_id"] = new_structure
-    new_nodes["parent_treenode_id"] = -1
+    new_points = pd.DataFrame(new_positions, columns=["x", "y", "z"])
+    new_points["r"] = new_radius
+    new_points["structure_id"] = new_structure
+    new_points["parent_treenode_id"] = -1
 
     if swc_df.size > 0:
         previous_max = swc_df.index.max()
         max_index = np.array(
-            previous_max + np.arange(1, len(new_nodes) + 1)
+            previous_max + np.arange(1, len(new_points) + 1)
         ).astype(int)
-        new_nodes.index = max_index
+        new_points.index = max_index
 
-        new_df = pd.concat([swc_df, new_nodes])
+        new_df = pd.concat([swc_df, new_points])
     else:
-        new_df = new_nodes
+        new_df = new_points
 
     new_df.index.name = "treenode_id"
     new_swc_content = write_swc_content(new_df, swc_content)
@@ -325,7 +325,7 @@ def move_points(swc_content, index, new_positions, swc_df=None):
     new_swc_content : swc_content
         New content of the swc file
     moved_lines : np.ndarray
-        New lines connecting the nodes
+        New lines connecting the points
     swc_df : pd.DataFrame
         Dataframe extracted from the new swc file
     """
@@ -363,7 +363,7 @@ def remove_points(swc_content, indices, swc_df=None):
     new_swc_content : swc_content
         New content of the sw
     moved_lines : np.ndarray
-        New lines connecting the nodes
+        New lines connecting the points
     new_r : np.ndarray
         New radius of the lines
     swc_df : pd.DataFrame
@@ -472,7 +472,7 @@ def remove_edge(swc_content, indices, swc_df=None):
     new_swc_content : str
         New content of the swc file
     new_lines : np.ndarray
-        New lines connecting the nodes
+        New lines connecting the points
     new_r : np.ndarray
         New radius of the lines
     swc_df : pd.DataFrame
@@ -565,7 +565,7 @@ def sort_edge_indices(swc_content, indices, swc_df=None):
     return sorted_indices
 
 
-def update_node_properties(swc_content, indices, new_properties, swc_df=None):
+def update_point_properties(swc_content, indices, new_properties, swc_df=None):
     """Update the properties of the nodes
 
     Parameters

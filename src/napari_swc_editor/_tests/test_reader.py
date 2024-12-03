@@ -1,5 +1,6 @@
 import numpy as np
-from napari_swc_reader import napari_get_reader
+
+from napari_swc_editor import napari_get_reader
 
 
 # tmp_path is a pytest fixture

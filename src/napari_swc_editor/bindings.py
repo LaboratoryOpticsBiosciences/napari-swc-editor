@@ -8,7 +8,7 @@ from .swc_io import (
     remove_points,
     sort_edge_indices,
     symbol_to_structure_id,
-    update_node_properties,
+    update_point_properties,
 )
 
 
@@ -33,8 +33,8 @@ def bind_layers_with_events(point_layer, shape_layer):
     point_layer.events.data.connect(event_add_points)
     point_layer.events.data.connect(event_move_points)
     point_layer.events.data.connect(event_remove_points)
-    point_layer.events.size.connect(event_update_node_properties)
-    point_layer.events.symbol.connect(event_update_node_properties)
+    point_layer.events.size.connect(event_update_point_properties)
+    point_layer.events.symbol.connect(event_update_point_properties)
 
     point_layer.bind_key("l")(event_add_edge)
     point_layer.bind_key("Shift-l")(event_add_edge_wo_sort)
@@ -94,9 +94,9 @@ def event_remove_points(event):
         event.source.metadata["swc_data"] = df
 
 
-def event_update_node_properties(event):
+def event_update_point_properties(event):
     """Update the properties (`size` -> `radius` and `symbol` -> `structure_id`)
-    of a point to the swc content node
+    of a point to the swc content point
 
     Parameters
     ----------
@@ -119,7 +119,7 @@ def event_update_node_properties(event):
         "structure_id": structure_id,
     }
 
-    new_swc, new_lines, new_r, df = update_node_properties(
+    new_swc, new_lines, new_r, df = update_point_properties(
         raw_swc,
         indices,
         properties,
@@ -155,7 +155,7 @@ def event_add_edge(layer, sort=True):
     layer : napari.layers.Points
         Points layer
     sort : bool, optional
-        If True, the indices will be sorted so soma are linked to other nodes,
+        If True, the indices will be sorted so soma are linked to other points,
         by default True
     """
 
@@ -184,7 +184,7 @@ def event_remove_edge(layer, sort=True):
     layer : napari.layers.Points
         Points layer
     sort : bool, optional
-        If True, the indices will be sorted so soma are linked to other nodes,
+        If True, the indices will be sorted so soma are linked to other points,
         by default True
     """
 
