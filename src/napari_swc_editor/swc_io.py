@@ -1,7 +1,10 @@
 import io
 
+import napari
 import numpy as np
 import pandas as pd
+
+from .bindings import bind_layers_with_events
 
 SWC_SYMBOL = {
     0: "clobber",  # undefined
@@ -10,6 +13,48 @@ SWC_SYMBOL = {
     3: "triangle_down",  # basal dendrite
     4: "triangle_up",  # apical dendrite
 }
+
+def add_napari_layers_from_swc_content(file_content:str, viewer:napari.Viewer):
+    """Create layers from a swc file
+
+    Parameters
+    ----------
+    file_content : swc_content
+        Content of the swc file
+    viewer : napari.Viewer
+
+    Returns
+    -------
+    layers : list of tuples
+        List of layers to be added to the napari viewer
+    """
+
+    points, radius, lines, structure = parse_data_from_swc_file(
+        file_content
+    )
+
+    structure_symbol = structure_id_to_symbol(structure)
+
+    shape_layer = viewer.add_shapes(
+        lines, shape_type="line", edge_width=radius
+    )
+
+    add_kwargs_points = {
+        "n_dimensional": True,
+        "size": radius,
+        "blending": "additive",
+        "symbol": structure_symbol,
+        "metadata": {
+            "raw_swc": file_content,
+            "shape_layer": shape_layer,
+        },
+    }
+
+    point_layer = viewer.add_points(points, **add_kwargs_points)
+
+    bind_layers_with_events(point_layer, shape_layer)
+
+    return [point_layer, shape_layer]
 
 
 def parse_swc_content(file_content):

@@ -8,8 +8,7 @@ https://napari.org/stable/plugins/guides.html?#readers
 
 import napari
 
-from .bindings import bind_layers_with_events
-from .swc_io import parse_data_from_swc_file, structure_id_to_symbol
+from .swc_io import add_napari_layers_from_swc_content
 
 
 def napari_get_reader(path):
@@ -66,29 +65,6 @@ def reader_function(path):
         with open(_path) as f:
             file_content = f.read()
 
-        points, radius, lines, structure = parse_data_from_swc_file(
-            file_content
-        )
-
-        structure_symbol = structure_id_to_symbol(structure)
-
-        shape_layer = viewer.add_shapes(
-            lines, shape_type="line", edge_width=radius
-        )
-
-        add_kwargs_points = {
-            "n_dimensional": True,
-            "size": radius,
-            "blending": "additive",
-            "symbol": structure_symbol,
-            "metadata": {
-                "raw_swc": file_content,
-                "shape_layer": shape_layer,
-            },
-        }
-
-        point_layer = viewer.add_points(points, **add_kwargs_points)
-
-        bind_layers_with_events(point_layer, shape_layer)
+        point_layer, shape_layer = add_napari_layers_from_swc_content(file_content, viewer)
 
     return [point_layer, shape_layer]
