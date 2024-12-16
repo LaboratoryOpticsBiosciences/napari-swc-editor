@@ -1,3 +1,5 @@
+import napari
+
 from .swc_io import (
     add_edge,
     add_points,
@@ -9,8 +11,59 @@ from .swc_io import (
     sort_edge_indices,
     symbol_to_structure_id,
     update_point_properties,
+    parse_data_from_swc_file,
+    structure_id_to_symbol
 )
 
+def add_napari_layers_from_swc_content(file_content:str, viewer:napari.Viewer):
+    """Create layers from a swc file
+
+    Parameters
+    ----------
+    file_content : swc_content
+        Content of the swc file
+        Must have the following columns:
+            - treenode_id
+            - structure_id
+            - x
+            - y
+            - z
+            - r
+            - parent_treenode_id
+    viewer : napari.Viewer
+
+    Returns
+    -------
+    layers : list of tuples
+        List of layers to be added to the napari viewer
+    """
+
+    points, radius, lines, structure = parse_data_from_swc_file(
+        file_content
+    )
+
+    structure_symbol = structure_id_to_symbol(structure)
+
+    shape_layer = viewer.add_shapes(
+        lines, shape_type="line", edge_width=radius
+    )
+
+    add_kwargs_points = {
+        "n_dimensional": True,
+        "size": radius,
+        "blending": "additive",
+        "symbol": structure_symbol,
+        "metadata": {
+            "raw_swc": file_content,
+            "shape_layer": shape_layer,
+        },
+    }
+
+    point_layer = viewer.add_points(points, **add_kwargs_points)
+
+    bind_layers_with_events(point_layer, shape_layer)
+
+    return [point_layer, shape_layer]
 
 def bind_layers_with_events(point_layer, shape_layer):
     """Bind the events of the point layer with the swc content

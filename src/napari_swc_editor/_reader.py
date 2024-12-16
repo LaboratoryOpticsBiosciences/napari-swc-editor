@@ -8,7 +8,7 @@ https://napari.org/stable/plugins/guides.html?#readers
 
 import napari
 
-from .swc_io import add_napari_layers_from_swc_content
+from .bindings import add_napari_layers_from_swc_content
 
 
 def napari_get_reader(path):
@@ -68,3 +68,6 @@ def reader_function(path):
         point_layer, shape_layer = add_napari_layers_from_swc_content(file_content, viewer)
 
     return [point_layer, shape_layer]
+
+def read_swc(path):
+    reader_function(path)
