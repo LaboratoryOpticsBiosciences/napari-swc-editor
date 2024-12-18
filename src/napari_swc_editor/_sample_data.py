@@ -9,6 +9,7 @@ Replace code below according to your needs.
 
 from __future__ import annotations
 
+import tempfile
 from urllib.request import urlretrieve
 
 from ._reader import reader_function
@@ -20,3 +21,14 @@ def make_sample_data():
     urlretrieve(url, "204-2-6nj.CNG.swc")
     result = reader_function("204-2-6nj.CNG.swc")
     return result
+
+
+def make_empty_sample():
+    content = "# SWC created using napari-swc-editor\n"
+    # create temp file
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".swc", delete=False
+    ) as f:
+        f.write(content)
+        result = reader_function(f.name)
+        return result

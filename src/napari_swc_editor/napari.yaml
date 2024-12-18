@@ -15,6 +15,9 @@ contributions:
     - id: napari-swc-editor.make_sample_data
       python_name: napari_swc_editor._sample_data:make_sample_data
       title: Load sample data from napari-swc-editor
+    - id: napari-swc-editor.make_empty_sample
+      python_name: napari_swc_editor._sample_data:make_empty_sample
+      title: Create empty swc from napari-swc-editor
     - id: napari-swc-editor.make_container_widget
       python_name: napari_swc_editor:ImageThreshold
       title: Make threshold Container widget
@@ -43,8 +46,11 @@ contributions:
       filename_extensions: ['.swc']
   sample_data:
     - command: napari-swc-editor.make_sample_data
-      display_name: napari-swc-editor
+      display_name: sample-napari-swc-editor
       key: unique_id.1
+    - command: napari-swc-editor.make_empty_sample
+      display_name: empty-napari-swc-editor
+      key: unique_id.2
   widgets:
     - command: napari-swc-editor.make_container_widget
       display_name: Container Threshold
