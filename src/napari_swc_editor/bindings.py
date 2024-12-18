@@ -100,13 +100,14 @@ def event_add_points(event):
 
     if event.action == "added":
         raw_swc = event.source.metadata["raw_swc"]
+        
 
         df = parse_swc_content(raw_swc)
         new_pos = event.source.data[list(event.data_indices)]
         new_radius = event.source.size[list(event.data_indices)]
         new_structure = event.source.symbol[list(event.data_indices)]
-
-        new_swc = add_points(raw_swc, new_pos, new_radius, new_structure, df)
+        
+        new_swc, df = add_points(raw_swc, new_pos, new_radius, new_structure, df)
 
         event.source.metadata["raw_swc"] = new_swc
         event.source.metadata["swc_data"] = df
@@ -200,7 +201,7 @@ def event_add_edge_wo_sort(layer):
     event_add_edge(layer, sort=False)
 
 
-def event_add_edge(layer, sort=True):
+def event_add_edge(layer, indices=None, sort=True):
     """Add an edge between two selected points
 
     Parameters
@@ -215,7 +216,8 @@ def event_add_edge(layer, sort=True):
     raw_swc = layer.metadata["raw_swc"]
     df = parse_swc_content(raw_swc)
 
-    indices = get_treenode_id_from_index(list(layer.selected_data), df)
+    if indices is None:
+        indices = get_treenode_id_from_index(list(layer.selected_data), df)
 
     if sort:
         indices = sort_edge_indices(raw_swc, indices, df)

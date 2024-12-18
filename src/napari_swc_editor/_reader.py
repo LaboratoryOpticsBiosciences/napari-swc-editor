@@ -66,8 +66,7 @@ def reader_function(path):
             file_content = f.read()
 
         point_layer, shape_layer = add_napari_layers_from_swc_content(file_content, viewer)
-
-    return [point_layer, shape_layer]
+    return (point_layer, shape_layer)
 
 def read_swc(path):
-    reader_function(path)
+    return reader_function(path)

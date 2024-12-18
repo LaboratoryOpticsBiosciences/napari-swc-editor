@@ -126,7 +126,7 @@ def parse_data_from_swc_file(file_content):
     structure : np.ndarray
         Structure of the points
     """
-
+    
     df = parse_swc_content(file_content)
 
     points, radius, structure = create_point_data_from_swc_data(df)
@@ -288,6 +288,9 @@ def add_points(
     new_points["r"] = new_radius
     new_points["structure_id"] = new_structure
     new_points["parent_treenode_id"] = -1
+    
+    # order columns
+    new_points = new_points[["structure_id", "x", "y", "z", "r", "parent_treenode_id"]]
 
     if swc_df.size > 0:
         previous_max = swc_df.index.max()
@@ -298,11 +301,11 @@ def add_points(
 
         new_df = pd.concat([swc_df, new_points])
     else:
-        new_df = new_points
+        new_df = new_points.copy()
 
     new_df.index.name = "treenode_id"
     new_swc_content = write_swc_content(new_df, swc_content)
-    return new_swc_content
+    return new_swc_content, new_df
 
 
 def move_points(swc_content, index, new_positions, swc_df=None):
@@ -597,7 +600,6 @@ def update_point_properties(swc_content, indices, new_properties, swc_df=None):
         swc_df = parse_swc_content(swc_content)
 
     for key, value in new_properties.items():
-        print(key, value)
         swc_df.loc[indices, key] = value
 
     new_lines, new_r = create_line_data_from_swc_data(swc_df)
