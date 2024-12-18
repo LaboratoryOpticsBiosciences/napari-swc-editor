@@ -5,17 +5,20 @@ from .swc_io import (
     add_points,
     get_treenode_id_from_index,
     move_points,
+    parse_data_from_swc_file,
     parse_swc_content,
     remove_edge,
     remove_points,
     sort_edge_indices,
+    structure_id_to_symbol,
     symbol_to_structure_id,
     update_point_properties,
-    parse_data_from_swc_file,
-    structure_id_to_symbol
 )
 
-def add_napari_layers_from_swc_content(file_content:str, viewer:napari.Viewer):
+
+def add_napari_layers_from_swc_content(
+    file_content: str, viewer: napari.Viewer
+):
     """Create layers from a swc file
 
     Parameters
@@ -38,9 +41,7 @@ def add_napari_layers_from_swc_content(file_content:str, viewer:napari.Viewer):
         List of layers to be added to the napari viewer
     """
 
-    points, radius, lines, structure = parse_data_from_swc_file(
-        file_content
-    )
+    points, radius, lines, structure = parse_data_from_swc_file(file_content)
 
     structure_symbol = structure_id_to_symbol(structure)
 
@@ -64,6 +65,7 @@ def add_napari_layers_from_swc_content(file_content:str, viewer:napari.Viewer):
     bind_layers_with_events(point_layer, shape_layer)
 
     return [point_layer, shape_layer]
+
 
 def bind_layers_with_events(point_layer, shape_layer):
     """Bind the events of the point layer with the swc content
@@ -100,14 +102,15 @@ def event_add_points(event):
 
     if event.action == "added":
         raw_swc = event.source.metadata["raw_swc"]
-        
 
         df = parse_swc_content(raw_swc)
         new_pos = event.source.data[list(event.data_indices)]
         new_radius = event.source.size[list(event.data_indices)]
         new_structure = event.source.symbol[list(event.data_indices)]
-        
-        new_swc, df = add_points(raw_swc, new_pos, new_radius, new_structure, df)
+
+        new_swc, df = add_points(
+            raw_swc, new_pos, new_radius, new_structure, df
+        )
 
         event.source.metadata["raw_swc"] = new_swc
         event.source.metadata["swc_data"] = df
