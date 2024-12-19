@@ -3,6 +3,7 @@ import napari
 from .swc_io import (
     add_edge,
     add_points,
+    create_line_data_from_swc_data,
     get_treenode_id_from_index,
     move_points,
     parse_data_from_swc_file,
@@ -57,6 +58,7 @@ def add_napari_layers_from_swc_content(
         "metadata": {
             "raw_swc": file_content,
             "shape_layer": shape_layer,
+            "Ctrl_activated": False,
         },
     }
 
@@ -107,13 +109,32 @@ def event_add_points(event):
         new_pos = event.source.data[list(event.data_indices)]
         new_radius = event.source.size[list(event.data_indices)]
         new_structure = event.source.symbol[list(event.data_indices)]
+        new_parents = -1
+
+        # if shift is activated, the add the new edges from previous selected point
+        if (
+            event.source.metadata["Ctrl_activated"]
+            and len(event.source.selected_data) > 0
+        ):
+
+            previous_selected = list(event.source.selected_data)[-1]
+            new_parents = get_treenode_id_from_index([previous_selected], df)[
+                0
+            ]
 
         new_swc, df = add_points(
-            raw_swc, new_pos, new_radius, new_structure, df
+            raw_swc, new_pos, new_radius, new_structure, new_parents, df
         )
 
         event.source.metadata["raw_swc"] = new_swc
         event.source.metadata["swc_data"] = df
+
+        if new_parents != -1:
+            new_lines, new_r = create_line_data_from_swc_data(df)
+            event.source.metadata["shape_layer"].data = []
+            event.source.metadata["shape_layer"].add_lines(
+                new_lines, edge_width=new_r
+            )
 
 
 def event_move_points(event):

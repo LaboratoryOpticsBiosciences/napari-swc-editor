@@ -245,7 +245,12 @@ def write_swc_content(df, swc_content=None):
 
 
 def add_points(
-    swc_content, new_positions, new_radius, new_structure=0, swc_df=None
+    swc_content,
+    new_positions,
+    new_radius,
+    structure_id=0,
+    parent_treenode_id=-1,
+    swc_df=None,
 ):
     """Add a point to the swc content
 
@@ -257,9 +262,12 @@ def add_points(
         New positions to be added in napari order (z, y, x)
     new_radius : np.ndarray
         Radius of the new positions
-    new_structure : np.ndarray
+    structure_id : np.ndarray
         Structure of the new positions, see SWC_SYMBOL
         Default is 0 (undefined)
+    parent_treenode_id : np.ndarray
+        Parent of the new positions
+        Default is -1 (no parent)
     swc_df : pd.DataFrame
         Dataframe extracted from the swc file. Should have the following columns:
         - x: x coordinate of the node
@@ -283,8 +291,8 @@ def add_points(
     # change napari position order to swc order
     new_points = pd.DataFrame(new_positions, columns=["z", "y", "x"])
     new_points["r"] = new_radius
-    new_points["structure_id"] = new_structure
-    new_points["parent_treenode_id"] = -1
+    new_points["structure_id"] = structure_id
+    new_points["parent_treenode_id"] = parent_treenode_id
 
     # order columns to respect swc format
     new_points = new_points[
