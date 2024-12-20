@@ -1,15 +1,72 @@
+import napari
+
 from .swc_io import (
     add_edge,
     add_points,
+    create_line_data_from_swc_data,
     get_treenode_id_from_index,
     move_points,
+    parse_data_from_swc_file,
     parse_swc_content,
     remove_edge,
     remove_points,
     sort_edge_indices,
+    structure_id_to_symbol,
     symbol_to_structure_id,
     update_point_properties,
 )
+
+
+def add_napari_layers_from_swc_content(
+    file_content: str, viewer: napari.Viewer
+):
+    """Create layers from a swc file
+
+    Parameters
+    ----------
+    file_content : swc_content
+        Content of the swc file
+        Must have the following columns:
+            - treenode_id
+            - structure_id
+            - x
+            - y
+            - z
+            - r
+            - parent_treenode_id
+    viewer : napari.Viewer
+
+    Returns
+    -------
+    layers : list of tuples
+        List of layers to be added to the napari viewer
+    """
+
+    points, radius, lines, structure = parse_data_from_swc_file(file_content)
+
+    structure_symbol = structure_id_to_symbol(structure)
+
+    shape_layer = viewer.add_shapes(
+        lines, shape_type="line", edge_width=radius
+    )
+
+    add_kwargs_points = {
+        "n_dimensional": True,
+        "size": radius,
+        "blending": "additive",
+        "symbol": structure_symbol,
+        "metadata": {
+            "raw_swc": file_content,
+            "shape_layer": shape_layer,
+            "Ctrl_activated": False,
+        },
+    }
+
+    point_layer = viewer.add_points(points, **add_kwargs_points)
+
+    bind_layers_with_events(point_layer, shape_layer)
+
+    return [point_layer, shape_layer]
 
 
 def bind_layers_with_events(point_layer, shape_layer):
@@ -52,11 +109,32 @@ def event_add_points(event):
         new_pos = event.source.data[list(event.data_indices)]
         new_radius = event.source.size[list(event.data_indices)]
         new_structure = event.source.symbol[list(event.data_indices)]
+        new_parents = -1
 
-        new_swc = add_points(raw_swc, new_pos, new_radius, new_structure, df)
+        # if shift is activated, the add the new edges from previous selected point
+        if (
+            event.source.metadata["Ctrl_activated"]
+            and len(event.source.selected_data) > 0
+        ):
+
+            previous_selected = list(event.source.selected_data)[-1]
+            new_parents = get_treenode_id_from_index([previous_selected], df)[
+                0
+            ]
+
+        new_swc, df = add_points(
+            raw_swc, new_pos, new_radius, new_structure, new_parents, df
+        )
 
         event.source.metadata["raw_swc"] = new_swc
         event.source.metadata["swc_data"] = df
+
+        if new_parents != -1:
+            new_lines, new_r = create_line_data_from_swc_data(df)
+            event.source.metadata["shape_layer"].data = []
+            event.source.metadata["shape_layer"].add_lines(
+                new_lines, edge_width=new_r
+            )
 
 
 def event_move_points(event):
@@ -147,7 +225,7 @@ def event_add_edge_wo_sort(layer):
     event_add_edge(layer, sort=False)
 
 
-def event_add_edge(layer, sort=True):
+def event_add_edge(layer, indices=None, sort=True):
     """Add an edge between two selected points
 
     Parameters
@@ -162,7 +240,8 @@ def event_add_edge(layer, sort=True):
     raw_swc = layer.metadata["raw_swc"]
     df = parse_swc_content(raw_swc)
 
-    indices = get_treenode_id_from_index(list(layer.selected_data), df)
+    if indices is None:
+        indices = get_treenode_id_from_index(list(layer.selected_data), df)
 
     if sort:
         indices = sort_edge_indices(raw_swc, indices, df)

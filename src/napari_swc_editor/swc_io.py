@@ -147,7 +147,7 @@ def create_point_data_from_swc_data(df):
     Returns
     -------
     points : np.ndarray
-        All positions of the points
+        All positions of the points. The coordinates are in the napari order (z, y, x)
     radius : np.ndarray
         Radius of the points
     structure : np.ndarray
@@ -159,7 +159,7 @@ def create_point_data_from_swc_data(df):
     structure = df["structure_id"].values
 
     # for each node create a point
-    points = df[["x", "y", "z"]].values
+    points = df[["z", "y", "x"]].values
 
     return points, radius, structure
 
@@ -186,7 +186,7 @@ def create_line_data_from_swc_data(df):
     """
 
     # for each nodes create a point
-    points = df[["x", "y", "z"]].values
+    points = df[["z", "y", "x"]].values
 
     # for each edge create a line
     edges = df["parent_treenode_id"].values
@@ -196,7 +196,7 @@ def create_line_data_from_swc_data(df):
     edges = edges[edges != -1]
 
     # for each id in edges, get the corresponding node according to its index
-    prev_point = df.loc[edges, ["x", "y", "z"]].values
+    prev_point = df.loc[edges, ["z", "y", "x"]].values
 
     lines = np.array([points, prev_point])
     lines = np.moveaxis(lines, 0, 1)
@@ -245,7 +245,12 @@ def write_swc_content(df, swc_content=None):
 
 
 def add_points(
-    swc_content, new_positions, new_radius, new_structure=0, swc_df=None
+    swc_content,
+    new_positions,
+    new_radius,
+    structure_id=0,
+    parent_treenode_id=-1,
+    swc_df=None,
 ):
     """Add a point to the swc content
 
@@ -254,12 +259,15 @@ def add_points(
     swc_content : swc_content
         Content of the swc file
     new_positions : np.ndarray
-        New positions to be added
+        New positions to be added in napari order (z, y, x)
     new_radius : np.ndarray
         Radius of the new positions
-    new_structure : np.ndarray
+    structure_id : np.ndarray
         Structure of the new positions, see SWC_SYMBOL
         Default is 0 (undefined)
+    parent_treenode_id : np.ndarray
+        Parent of the new positions
+        Default is -1 (no parent)
     swc_df : pd.DataFrame
         Dataframe extracted from the swc file. Should have the following columns:
         - x: x coordinate of the node
@@ -280,10 +288,16 @@ def add_points(
     if swc_df is None:
         swc_df = parse_swc_content(swc_content)
 
-    new_points = pd.DataFrame(new_positions, columns=["x", "y", "z"])
+    # change napari position order to swc order
+    new_points = pd.DataFrame(new_positions, columns=["z", "y", "x"])
     new_points["r"] = new_radius
-    new_points["structure_id"] = new_structure
-    new_points["parent_treenode_id"] = -1
+    new_points["structure_id"] = structure_id
+    new_points["parent_treenode_id"] = parent_treenode_id
+
+    # order columns to respect swc format
+    new_points = new_points[
+        ["structure_id", "x", "y", "z", "r", "parent_treenode_id"]
+    ]
 
     if swc_df.size > 0:
         previous_max = swc_df.index.max()
@@ -294,11 +308,11 @@ def add_points(
 
         new_df = pd.concat([swc_df, new_points])
     else:
-        new_df = new_points
+        new_df = new_points.copy()
 
     new_df.index.name = "treenode_id"
     new_swc_content = write_swc_content(new_df, swc_content)
-    return new_swc_content
+    return new_swc_content, new_df
 
 
 def move_points(swc_content, index, new_positions, swc_df=None):
@@ -311,7 +325,7 @@ def move_points(swc_content, index, new_positions, swc_df=None):
     index : int
         Index of the point to be moved
     new_positions : np.ndarray
-        New positions of the point
+        New positions of the point in napari order (z, y, x)
     swc_df : pd.DataFrame
         Dataframe extracted from the swc file. Should have the following columns:
         - x: x coordinate of the node
@@ -333,7 +347,7 @@ def move_points(swc_content, index, new_positions, swc_df=None):
     if swc_df is None:
         swc_df = parse_swc_content(swc_content)
 
-    swc_df.loc[index, ["x", "y", "z"]] = new_positions
+    swc_df.loc[index, ["z", "y", "x"]] = new_positions
 
     new_swc_content = write_swc_content(swc_df, swc_content)
     moved_lines, _ = create_line_data_from_swc_data(swc_df)
@@ -593,7 +607,6 @@ def update_point_properties(swc_content, indices, new_properties, swc_df=None):
         swc_df = parse_swc_content(swc_content)
 
     for key, value in new_properties.items():
-        print(key, value)
         swc_df.loc[indices, key] = value
 
     new_lines, new_r = create_line_data_from_swc_data(swc_df)
