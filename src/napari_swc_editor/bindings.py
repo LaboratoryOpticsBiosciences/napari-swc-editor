@@ -96,8 +96,18 @@ def bind_layers_with_events(point_layer, shape_layer):
     point_layer.bind_key("l")(event_add_edge)
     point_layer.bind_key("Shift-l")(event_add_edge_wo_sort)
     point_layer.bind_key("u")(event_remove_edge)
+    point_layer.bind_key("Ctrl", linked_point)
 
     point_layer.metadata["shape_layer"] = shape_layer
+
+
+def linked_point(layer):
+    """Activate the Ctrl key for the next event.
+    Used to link points together"""
+
+    layer.metadata["Ctrl_activated"] = True
+    yield
+    layer.metadata["Ctrl_activated"] = False
 
 
 def event_add_points(event):
