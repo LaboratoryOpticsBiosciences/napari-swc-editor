@@ -18,18 +18,9 @@ contributions:
     - id: napari-swc-editor.make_empty_sample
       python_name: napari_swc_editor._sample_data:make_empty_sample
       title: Create empty swc from napari-swc-editor
-    - id: napari-swc-editor.make_container_widget
-      python_name: napari_swc_editor:ImageThreshold
-      title: Make threshold Container widget
-    - id: napari-swc-editor.make_magic_widget
-      python_name: napari_swc_editor:threshold_magic_widget
-      title: Make threshold magic widget
-    - id: napari-swc-editor.make_function_widget
-      python_name: napari_swc_editor:threshold_autogenerate_widget
-      title: Make threshold function widget
-    - id: napari-swc-editor.make_qwidget
-      python_name: napari_swc_editor:ExampleQWidget
-      title: Make example QWidget
+    - id: napari-swc-editor.swc_editor_widget
+      python_name: napari_swc_editor:SWCEditorWidget
+      title: SWC Editor Widget
     - id: napari-swc-editor.get_reader
       python_name: napari_swc_editor._reader:napari_get_reader
       title: Open data with napari-swc-reader
@@ -52,12 +43,5 @@ contributions:
       display_name: empty-napari-swc-editor
       key: unique_id.2
   widgets:
-    - command: napari-swc-editor.make_container_widget
-      display_name: Container Threshold
-    - command: napari-swc-editor.make_magic_widget
-      display_name: Magic Threshold
-    - command: napari-swc-editor.make_function_widget
-      autogenerate: true
-      display_name: Autogenerate Threshold
-    - command: napari-swc-editor.make_qwidget
-      display_name: Example QWidget
+    - command: napari-swc-editor.swc_editor_widget
+      display_name: SWC Editor Widget

@@ -58,7 +58,8 @@ def add_napari_layers_from_swc_content(
         "metadata": {
             "raw_swc": file_content,
             "shape_layer": shape_layer,
-            "Ctrl_activated": False,
+            "Ctrl_activated": False,  # link input from keyboard
+            "widget_link_activated": False,  # link input from widget
         },
     }
 
@@ -124,8 +125,8 @@ def event_add_points(event):
         # if shift is activated, the add the new edges from previous selected point
         if (
             event.source.metadata["Ctrl_activated"]
-            and len(event.source.selected_data) > 0
-        ):
+            or event.source.metadata["link_previous_node"]
+        ) and len(event.source.selected_data) > 0:
 
             previous_selected = list(event.source.selected_data)[-1]
             new_parents = get_treenode_id_from_index([previous_selected], df)[
