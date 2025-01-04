@@ -31,99 +31,128 @@ Replace code below according to your needs.
 
 from typing import TYPE_CHECKING
 
-from magicgui import magic_factory
-from magicgui.widgets import CheckBox, Container, create_widget
-from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget
-from skimage.util import img_as_float
+from magicgui.widgets import Container, Table, create_widget
 
 if TYPE_CHECKING:
     import napari
 
 
-# Uses the `autogenerate: true` flag in the plugin manifest
-# to indicate it should be wrapped as a magicgui to autogenerate
-# a widget.
-def threshold_autogenerate_widget(
-    img: "napari.types.ImageData",
-    threshold: "float",
-) -> "napari.types.LabelsData":
-    return img_as_float(img) > threshold
-
-
-# the magic_factory decorator lets us customize aspects of our widget
-# we specify a widget type for the threshold parameter
-# and use auto_call=True so the function is called whenever
-# the value of a parameter changes
-@magic_factory(
-    threshold={"widget_type": "FloatSlider", "max": 1}, auto_call=True
-)
-def threshold_magic_widget(
-    img_layer: "napari.layers.Image", threshold: "float"
-) -> "napari.types.LabelsData":
-    return img_as_float(img_layer.data) > threshold
-
-
-# if we want even more control over our widget, we can use
-# magicgui `Container`
-class ImageThreshold(Container):
+class SWCEditorWidget(Container):
     def __init__(self, viewer: "napari.viewer.Viewer"):
         super().__init__()
         self._viewer = viewer
         # use create_widget to generate widgets from type annotations
-        self._image_layer_combo = create_widget(
-            label="Image", annotation="napari.layers.Image"
+        self._point_layer_combo = create_widget(
+            label="Points", annotation="napari.layers.Points"
         )
-        self._threshold_slider = create_widget(
-            label="Threshold", annotation=float, widget_type="FloatSlider"
+        self._link_previous_node_checkbox = create_widget(
+            label="link previous node with new node (same as using CTRL+Click)",
+            annotation=float,
+            widget_type="CheckBox",
         )
-        self._threshold_slider.min = 0
-        self._threshold_slider.max = 1
-        # use magicgui widgets directly
-        self._invert_checkbox = CheckBox(text="Keep pixels below threshold")
+        self._show_table_button = create_widget(
+            label="Show swc table", annotation=bool, widget_type="PushButton"
+        )
+
+        self._get_layer_data()
 
         # connect your own callbacks
-        self._threshold_slider.changed.connect(self._threshold_im)
-        self._invert_checkbox.changed.connect(self._threshold_im)
+        self._link_previous_node_checkbox.changed.connect(
+            self._set_link_previous_node
+        )
+        self._link_previous_node_checkbox.changed.connect(self._get_layer_data)
+
+        self._show_table_button.changed.connect(self._set_table)
 
         # append into/extend the container with your widgets
         self.extend(
             [
-                self._image_layer_combo,
-                self._threshold_slider,
-                self._invert_checkbox,
+                self._point_layer_combo,
+                self._link_previous_node_checkbox,
+                self._show_table_button,
             ]
         )
 
-    def _threshold_im(self):
-        image_layer = self._image_layer_combo.value
-        if image_layer is None:
+    def _set_table(self):
+        if not hasattr(self, "_table") or self._table is None:
+            table = Table(
+                value=self._point_layer_combo.value.metadata[
+                    "swc_data"
+                ].reset_index()
+            )
+            table.native.setEditTriggers(table.native.NoEditTriggers)
+            table.native.clicked.connect(self._table_clicked)
+            table.native.doubleClicked.connect(self._table_double_clicked)
+
+            self._point_layer_combo.value.selected_data.events._current.connect(
+                self._change_current_cell
+            )
+            self._table = table
+            self._viewer.window.add_dock_widget(
+                self._table.native, area="right"
+            )
+        else:
+            self._table.value = self._point_layer_combo.value.metadata[
+                "swc_data"
+            ].reset_index()
+
+    def _change_current_cell(self, current_selected):
+        if current_selected is not None:
+            column = (
+                self._table.native.currentColumn()
+                if self._table.native.currentColumn() != -1
+                else 0
+            )
+            self._table.native.setCurrentCell(current_selected, column)
+
+    def _get_layer_data(self):
+        layer = self._point_layer_combo.value
+        if layer is None:
+            self._link_previous_node_checkbox.value = False
+            self._link_previous_node_checkbox.enabled = False
+            self._show_table_button.enabled = False
+        else:
+            self._link_previous_node_checkbox.value = layer.metadata.get(
+                "link_previous_node", False
+            )
+            self._link_previous_node_checkbox.enabled = True
+            self._show_table_button.enabled = True
+            layer.events.data.connect(self._set_table)
+
+    def _set_link_previous_node(self, value):
+        layer = self._point_layer_combo.value
+        if layer is None:
             return
+        layer.metadata["link_previous_node"] = value
 
-        image = img_as_float(image_layer.data)
-        name = image_layer.name + "_thresholded"
-        threshold = self._threshold_slider.value
-        if self._invert_checkbox.value:
-            thresholded = image < threshold
-        else:
-            thresholded = image > threshold
-        if name in self._viewer.layers:
-            self._viewer.layers[name].data = thresholded
-        else:
-            self._viewer.add_labels(thresholded, name=name)
+    def _table_clicked(self, event):
+        row = event.row()
+        x = self._table["x"][row]
+        y = self._table["y"][row]
+        z = self._table["z"][row]
 
+        # get the current viewer
+        viewer = self._viewer
 
-class ExampleQWidget(QWidget):
-    # your QWidget.__init__ can optionally request the napari viewer instance
-    # use a type annotation of 'napari.viewer.Viewer' for any parameter
-    def __init__(self, viewer: "napari.viewer.Viewer"):
-        super().__init__()
-        self.viewer = viewer
+        current_step = list(viewer.dims.current_step)
+        current_step[-1] = row
+        viewer.dims.current_step = current_step
+        current_step[0] = int(z)
+        current_step[1] = int(y)
+        current_step[2] = int(x)
 
-        btn = QPushButton("Click me!")
-        btn.clicked.connect(self._on_click)
+        viewer.dims.point = current_step
 
-        self.setLayout(QHBoxLayout())
-        self.layout().addWidget(btn)
+        # set camera to the clicked point
+        viewer.camera.center = [
+            0,
+            current_step[viewer.dims.order[1]],
+            current_step[viewer.dims.order[2]],
+        ]
 
-    def _on_click(self):
-        print("napari has", len(self.viewer.layers), "layers")
+        self._point_layer_combo.value.selected_data = [row]
+
+    def _table_double_clicked(self, event):
+        # same as clicking on the table but zoom
+        self._table_clicked(event)
+        self._viewer.camera.zoom = 80
