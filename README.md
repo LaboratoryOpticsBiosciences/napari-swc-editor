@@ -52,6 +52,15 @@ SWC_SYMBOL = {
 ```
 ![image](https://github.com/user-attachments/assets/618aa000-370d-43f9-8645-8a3b7e9b9739)
 
+You can also visualize the swc data in a table using the widget under `Plugin > SWC Editor Widget`
+
+![image](https://github.com/user-attachments/assets/ed43f4c2-582b-4bc1-bbb1-54e8d9487f1d)
+
+When using the "Show swc table" you will have an interactive table widget:
+- left-click on table: highlight + center on the corresponding point
+- **double**-left-click on table: highlight + center on the correspongind point **+ zoom**
+- selection on the point layer: highlight the corresponding row on the table
+
 #### SWC Edition
 **ALL INTERACTIONS ARE ONLY BOUND TO THE `point_layer`**
 **THERE IS NO CTRL-Z (please save your progress)**
@@ -60,13 +69,21 @@ SWC_SYMBOL = {
 - **Add edge**: Select 2 or more point(s) and press on your keyboard `l` (aka: link).
 - **Remove edge**: Select 1 or more point(s) and press on your keyboard `u` (aka: unlink).
 
+If you want to link point as you are adding them you have two solutions:
+- press "CTRL" while you add points, this will create a link with the previously selected point
+- use the `Plugin > SWC Editor Widget` Checkbox ("link previous node with new node (same as using CTRL+Click)"): when selected, all new points will be selected with the previously selected point
 
+https://github.com/user-attachments/assets/273f1221-2882-4a7c-ab7f-6d3ecb7f3fa6
 
 ## Installation
 
 You can install `napari-swc-editor` via [pip]:
 
     pip install napari-swc-editor
+
+
+
+
 
 
 
