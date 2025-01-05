@@ -133,8 +133,12 @@ def event_add_points(event):
                 0
             ]
 
+        structure_id = symbol_to_structure_id(
+            [structure.value for structure in new_structure]
+        )
+
         new_swc, df = add_points(
-            raw_swc, new_pos, new_radius, new_structure, new_parents, df
+            raw_swc, new_pos, new_radius, structure_id, new_parents, df
         )
 
         event.source.metadata["raw_swc"] = new_swc
