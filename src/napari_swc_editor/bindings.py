@@ -125,7 +125,7 @@ def event_add_points(event):
         # if shift is activated, the add the new edges from previous selected point
         if (
             event.source.metadata["Ctrl_activated"]
-            or event.source.metadata["link_previous_node"]
+            or event.source.metadata["widget_link_activated"]
         ) and len(event.source.selected_data) > 0:
 
             previous_selected = list(event.source.selected_data)[-1]
@@ -133,8 +133,12 @@ def event_add_points(event):
                 0
             ]
 
+        structure_id = symbol_to_structure_id(
+            [structure.value for structure in new_structure]
+        )
+
         new_swc, df = add_points(
-            raw_swc, new_pos, new_radius, new_structure, new_parents, df
+            raw_swc, new_pos, new_radius, structure_id, new_parents, df
         )
 
         event.source.metadata["raw_swc"] = new_swc

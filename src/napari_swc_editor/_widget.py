@@ -47,9 +47,9 @@ class SWCEditorWidget(Container):
         )
         self._link_previous_node_checkbox = create_widget(
             label="link previous node with new node (same as using CTRL+Click)",
-            annotation=float,
             widget_type="CheckBox",
         )
+
         self._show_table_button = create_widget(
             label="Show swc table", annotation=bool, widget_type="PushButton"
         )
@@ -57,10 +57,10 @@ class SWCEditorWidget(Container):
         self._get_layer_data()
 
         # connect your own callbacks
+        self._point_layer_combo.changed.connect(self._get_layer_data)
         self._link_previous_node_checkbox.changed.connect(
             self._set_link_previous_node
         )
-        self._link_previous_node_checkbox.changed.connect(self._get_layer_data)
 
         self._show_table_button.changed.connect(self._set_table)
 
@@ -123,7 +123,7 @@ class SWCEditorWidget(Container):
         layer = self._point_layer_combo.value
         if layer is None:
             return
-        layer.metadata["link_previous_node"] = value
+        layer.metadata["widget_link_activated"] = value
 
     def _table_clicked(self, event):
         row = event.row()
