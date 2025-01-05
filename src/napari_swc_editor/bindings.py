@@ -125,7 +125,7 @@ def event_add_points(event):
         # if shift is activated, the add the new edges from previous selected point
         if (
             event.source.metadata["Ctrl_activated"]
-            or event.source.metadata["link_previous_node"]
+            or event.source.metadata["widget_link_activated"]
         ) and len(event.source.selected_data) > 0:
 
             previous_selected = list(event.source.selected_data)[-1]
