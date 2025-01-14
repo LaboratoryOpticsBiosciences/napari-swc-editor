@@ -50,6 +50,16 @@ def parse_swc_content(file_content):
             "parent_treenode_id",
         ],
         index_col=0,
+        # set the type of the columns
+        dtype={
+            "treenode_id": int,
+            "structure_id": int,
+            "x": float,
+            "y": float,
+            "z": float,
+            "r": float,
+            "parent_treenode_id": int,
+        },
     )
 
     return df
@@ -298,6 +308,7 @@ def add_points(
     new_points = new_points[
         ["structure_id", "x", "y", "z", "r", "parent_treenode_id"]
     ]
+    
 
     if swc_df.size > 0:
         previous_max = swc_df.index.max()
@@ -424,8 +435,32 @@ def get_treenode_id_from_index(iloc, df):
 
     return indices
 
+def get_index_from_treenode_id(indices, df):
+    """Get the iloc index from the treenode_id
 
-def add_edge(swc_content, indices, swc_df=None):
+    Parameters
+    ----------
+    indices : int or list of int
+        Treenode_id of the row in the dataframe
+    df : pd.DataFrame
+        Dataframe extracted from a swc file. Should have the following columns:
+        - treenode_id as index
+        - parent_treenode_id: id of the parent node
+
+    Returns
+    -------
+    iloc : np.ndarray
+        Index of the selected treenode_id
+    """
+
+    if isinstance(indices, int):
+        indices = [indices]
+
+    iloc = df.index.get_indexer(indices)
+
+    return iloc
+
+def add_edge(swc_content, treenode_id, parent_treenode_id, swc_df=None):
     """Add an edge between two or more indices in order
 
     Parameters
@@ -451,13 +486,11 @@ def add_edge(swc_content, indices, swc_df=None):
         Dataframe extracted from the swc file
     """
 
-    assert len(indices) >= 2, "At least two indices are needed to create edges"
 
     if swc_df is None:
         swc_df = parse_swc_content(swc_content)
 
-    for i in range(1, len(indices)):
-        swc_df.loc[indices[i], "parent_treenode_id"] = indices[i - 1]
+    swc_df.loc[treenode_id, "parent_treenode_id"] = parent_treenode_id
 
     new_lines, new_r = create_line_data_from_swc_data(swc_df)
 
@@ -614,3 +647,51 @@ def update_point_properties(swc_content, indices, new_properties, swc_df=None):
     new_swc_content = write_swc_content(swc_df, swc_content)
 
     return new_swc_content, new_lines, new_r, swc_df
+
+def get_branch_from_node(node_id, df, upstream=True, downstream=True):
+    """Get the branch of a node
+
+    Parameters
+    ----------
+    node_id : int
+        Index of the node
+    df : pd.DataFrame
+        Dataframe extracted from a swc file. Should have the following columns:
+        - treenode_id as index
+        - parent_treenode_id: id of the parent node
+    upstream : bool
+        If True, get the branch from the selected node to the leaf
+        Default is True
+    downstream : bool
+        If True, get the branch from the selected node to the soma
+        Default is True
+
+    Returns
+    -------
+    branch : pd.DataFrame
+        Branch of the node
+    """
+    
+    to_explore = []
+    branch = [node_id]
+    if downstream:
+        # get the branch from the selected node to the soma
+        node_id = df.loc[node_id, "parent_treenode_id"]
+        while node_id != -1:
+            branch.append(df.loc[node_id, "parent_treenode_id"])
+            
+            node_id = df.loc[node_id, "parent_treenode_id"]
+    
+    if upstream:
+        # get the branch from the selected node to the end
+        node_id = branch[0]
+        children = df[df["parent_treenode_id"] == node_id].index.values
+        to_explore.extend(children)
+        while len(to_explore) > 0:
+            node_id = to_explore.pop()
+            children = df[df["parent_treenode_id"] == node_id].index.values
+            to_explore.extend(children)
+            branch.append(node_id)
+            
+    branch = np.array(branch).astype(int)
+    return branch
