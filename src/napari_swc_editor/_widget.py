@@ -137,9 +137,10 @@ class SWCEditorWidget(Container):
         current_step = list(viewer.dims.current_step)
         current_step[-1] = row
         viewer.dims.current_step = current_step
-        current_step[0] = int(z)
-        current_step[1] = int(y)
-        current_step[2] = int(x)
+        # use negative index to get the order of the dimensions even if len(ndims) > 3
+        current_step[-3] = int(z)
+        current_step[-2] = int(y)
+        current_step[-1] = int(x)
 
         viewer.dims.point = current_step
 
