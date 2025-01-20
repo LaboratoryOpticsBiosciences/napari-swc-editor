@@ -59,6 +59,7 @@ def add_napari_layers_from_swc_content(
         "size": radius,
         "blending": "additive",
         "symbol": structure_symbol,
+        "face_color": "transparent",
         "metadata": {
             "raw_swc": file_content,
             "shape_layer": shape_layer,
