@@ -81,8 +81,9 @@ class SWCEditorWidget(Container):
                 ].reset_index()
             )
             table.native.setEditTriggers(table.native.NoEditTriggers)
-            table.native.clicked.connect(self._table_clicked)
-            table.native.doubleClicked.connect(self._table_double_clicked)
+            table.native.clicked.connect(self._focus_on_current_cell)
+            table.native.doubleClicked.connect(self._zoom_and_focus_on_current_cell)
+            table.native.currentCellChanged.connect(self._focus_on_current_cell)
 
             self._point_layer_combo.value.selected_data.events._current.connect(
                 self._change_current_cell
@@ -91,7 +92,12 @@ class SWCEditorWidget(Container):
             self._viewer.window.add_dock_widget(
                 self._table.native, area="right"
             )
+            self._point_layer_combo.value.events.data.connect(self._set_table)
         else:
+            self._point_layer_combo.value.selected_data.events._current.connect(
+                self._change_current_cell
+            )
+            self._point_layer_combo.value.events.data.connect(self._set_table)
             self._table.value = self._point_layer_combo.value.metadata[
                 "swc_data"
             ].reset_index()
@@ -117,7 +123,7 @@ class SWCEditorWidget(Container):
             )
             self._link_previous_node_checkbox.enabled = True
             self._show_table_button.enabled = True
-            layer.events.data.connect(self._set_table)
+            # layer.events.data.connect(self._set_table)
 
     def _set_link_previous_node(self, value):
         layer = self._point_layer_combo.value
@@ -125,8 +131,12 @@ class SWCEditorWidget(Container):
             return
         layer.metadata["widget_link_activated"] = value
 
-    def _table_clicked(self, event):
-        row = event.row()
+    def _focus_on_current_cell(self, event):
+        
+        if type(event) != int:
+            row = event.row()
+        else:
+            row = event
         x = self._table["x"][row]
         y = self._table["y"][row]
         z = self._table["z"][row]
@@ -153,7 +163,7 @@ class SWCEditorWidget(Container):
 
         self._point_layer_combo.value.selected_data = [row]
 
-    def _table_double_clicked(self, event):
+    def _zoom_and_focus_on_current_cell(self, event):
         # same as clicking on the table but zoom
-        self._table_clicked(event)
-        self._viewer.camera.zoom = 80
+        self._focus_on_current_cell(event) # focus on the cell
+        self._viewer.camera.zoom = 80 # zoom
