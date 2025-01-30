@@ -51,7 +51,7 @@ def add_napari_layers_from_swc_content(
     structure_symbol = structure_id_to_symbol(structure)
 
     shape_layer = viewer.add_shapes(
-        lines, shape_type="line", edge_width=radius, 
+        lines, shape_type="line", edge_width=radius, ndim=3
     )
 
     add_kwargs_points = {
