@@ -71,6 +71,10 @@ def add_napari_layers_from_swc_content(
     viewer.dims.events.ndisplay.connect(
         lambda e: update_edges(point_layer) if e.value == 3 else None
     )
+    # when the shape layer is visible, update the edges
+    shape_layer.events.visible.connect(
+        lambda e: update_edges(point_layer) if e.value is True else None
+    )
 
     bind_layers_with_events(point_layer, shape_layer)
 
