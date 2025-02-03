@@ -1,11 +1,12 @@
 import napari
 import numpy as np
-from functools import partial
 
 from .swc_io import (
     add_edge,
     add_points,
     create_line_data_from_swc_data,
+    get_branch_from_node,
+    get_index_from_treenode_id,
     get_treenode_id_from_index,
     move_points,
     parse_data_from_swc_file,
@@ -16,8 +17,6 @@ from .swc_io import (
     structure_id_to_symbol,
     symbol_to_structure_id,
     update_point_properties,
-    get_branch_from_node,
-    get_index_from_treenode_id,
 )
 
 
@@ -76,9 +75,7 @@ def add_napari_layers_from_swc_content(
         lambda e: update_edges(point_layer) if e.value == 3 else None
     )
     # when the shape layer is visible, update the edges
-    shape_layer.events.visible.connect(
-        lambda e: update_edges(point_layer) if e.value is True else None
-    )
+    shape_layer.events.visible.connect(lambda _: update_edges(point_layer))
 
     bind_layers_with_events(point_layer, shape_layer)
 
@@ -103,12 +100,12 @@ def update_edges(point_layer, lines=None, edge_width=None):
         raw_swc = point_layer.metadata["raw_swc"]
         df = parse_swc_content(raw_swc)
 
-        lines, r = create_line_data_from_swc_data(df)
+        lines, edge_width = create_line_data_from_swc_data(df)
 
     # when updating the shape layer directly, the previous data
     # is not removed correctly. So we remove it first
     point_layer.metadata["shape_layer"].data = []
-    point_layer.metadata["shape_layer"].add_lines(lines, edge_width=r)
+    point_layer.metadata["shape_layer"].add_lines(lines, edge_width=edge_width)
 
 
 def bind_layers_with_events(point_layer, shape_layer):
@@ -139,11 +136,12 @@ def bind_layers_with_events(point_layer, shape_layer):
     point_layer.bind_key("u")(event_remove_edge)
     point_layer.bind_key("b", select_branch)
     point_layer.bind_key("Shift+b", select_upstream_branch)
-    
+
     point_layer.bind_key("Control", linked_point)
 
     point_layer.metadata["shape_layer"] = shape_layer
-    
+
+
 def select_upstream_branch(layer):
     """Select the upstream branch of the selected point
 
@@ -156,6 +154,7 @@ def select_upstream_branch(layer):
     """
 
     select_branch(layer, upstream=True, downstream=False)
+
 
 def select_branch(layer, upstream=True, downstream=True):
     """Select the branch of the selected point
@@ -170,13 +169,15 @@ def select_branch(layer, upstream=True, downstream=True):
 
     raw_swc = layer.metadata["raw_swc"]
     df = parse_swc_content(raw_swc)
-    
+
     selected_branches = []
     for selected in list(layer.selected_data):
         indices = get_treenode_id_from_index([selected], df)[0]
-        branch_indices = get_branch_from_node(indices, df, upstream, downstream)
+        branch_indices = get_branch_from_node(
+            indices, df, upstream, downstream
+        )
         selected_branches.extend(branch_indices)
-    
+
     selected_branches = np.unique(selected_branches)
     indices = get_index_from_treenode_id(selected_branches, df)
     layer.selected_data = indices
@@ -189,7 +190,7 @@ def linked_point(layer):
     layer.metadata["Ctrl_activated"] = True
     yield
     layer.metadata["Ctrl_activated"] = False
-    
+
 
 def event_add_points(event):
 
@@ -197,15 +198,16 @@ def event_add_points(event):
         raw_swc = event.source.metadata["raw_swc"]
 
         df = parse_swc_content(raw_swc)
-        
+
         # indices must be deduced because the event.data_indices has only (-1,) see
         # https://github.com/napari/napari/issues/7507
-        indices = [-i-1 for i in reversed(range(0, len(event.source.data)-len(df)))]
+        indices = [
+            -i - 1 for i in reversed(range(len(event.source.data) - len(df)))
+        ]
         new_pos = event.source.data[indices]
         new_radius = event.source.size[indices]
         new_structure = event.source.symbol[indices]
         new_parents = -1
-        
 
         # if shift is activated, the add the new edges from previous selected point
         if (
@@ -230,7 +232,7 @@ def event_add_points(event):
         event.source.metadata["swc_data"] = df
 
         if new_parents != -1:
-            
+
             new_lines, new_r = create_line_data_from_swc_data(df)
             update_edges(event.source, new_lines, new_r)
 
@@ -302,7 +304,10 @@ def event_update_point_properties(event):
     update_edges(event.source, new_lines, new_r)
     event.source.metadata["swc_data"] = df
 
-def event_add_edge(layer, treenode_id=None, parent_treenode_id=None, sort=True):
+
+def event_add_edge(
+    layer, treenode_id=None, parent_treenode_id=None, sort=True
+):
     """Add an edge between two selected points
 
     Parameters
@@ -326,8 +331,10 @@ def event_add_edge(layer, treenode_id=None, parent_treenode_id=None, sort=True):
             treenode_id = sort_edge_indices(raw_swc, treenode_id, df)
         parent_treenode_id = treenode_id[:-1].astype(int)
         treenode_id = treenode_id[1:].astype(int)
-        
-    new_swc, new_lines, new_r, df = add_edge(raw_swc, treenode_id, parent_treenode_id, df)
+
+    new_swc, new_lines, new_r, df = add_edge(
+        raw_swc, treenode_id, parent_treenode_id, df
+    )
 
     layer.metadata["raw_swc"] = new_swc
     update_edges(layer, new_lines, new_r)
