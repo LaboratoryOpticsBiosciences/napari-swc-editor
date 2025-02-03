@@ -1,5 +1,6 @@
 import napari
 import numpy as np
+from napari.layers.base._base_constants import ActionType
 
 from .swc_io import (
     add_edge,
@@ -140,6 +141,36 @@ def bind_layers_with_events(point_layer, shape_layer):
     point_layer.bind_key("Control", linked_point)
 
     point_layer.metadata["shape_layer"] = shape_layer
+
+    # useful to ajust in 2D the third dimension
+    point_layer.bind_key("up", on_arrow_up, overwrite=True)
+    point_layer.bind_key("down", on_arrow_down, overwrite=True)
+
+
+def on_arrow_up(layer):
+    """Move the selected points up by 1 unit in the z direction"""
+    selection_indices = list(layer.selected_data)
+    layer.data[selection_indices] += np.array([1, 0, 0])
+    layer.refresh()
+    layer.events.data(
+        value=layer.data,
+        action=ActionType.CHANGED,
+        data_indices=tuple(selection_indices),
+        vertex_indices=((),),
+    )
+
+
+def on_arrow_down(layer):
+    """Move the selected points down by 1 unit in the z direction"""
+    selection_indices = list(layer.selected_data)
+    layer.data[selection_indices] -= np.array([1, 0, 0])
+    layer.refresh()
+    layer.events.data(
+        value=layer.data,
+        action=ActionType.CHANGED,
+        data_indices=tuple(selection_indices),
+        vertex_indices=((),),
+    )
 
 
 def select_upstream_branch(layer):
