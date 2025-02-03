@@ -61,14 +61,50 @@ def add_napari_layers_from_swc_content(
             "shape_layer": shape_layer,
             "Ctrl_activated": False,  # link input from keyboard
             "widget_link_activated": False,  # link input from widget
+            # delay the update of the vector layer used for faster loading of the swc file
+            "pause_2D_vector_update": viewer.dims.events.ndisplay == 2,
         },
     }
 
     point_layer = viewer.add_points(points, **add_kwargs_points)
 
+    # only update the vector layer when the 3D viewer is active for faster loading
+    viewer.dims.events.ndisplay.connect(
+        lambda e: point_layer.metadata.update(
+            {"pause_2D_vector_update": e.value == 2}
+        )
+    )
+    viewer.dims.events.ndisplay.connect(
+        lambda e: update_edges(point_layer) if e.value == 3 else None
+    )
+
     bind_layers_with_events(point_layer, shape_layer)
 
     return [point_layer, shape_layer]
+
+
+def update_edges(point_layer, lines=None, edge_width=None):
+    """Update the edges of the shape layer based on the swc content
+
+    Parameters
+    ----------
+    point_layer : napari.layers.Points
+        Points layer
+    """
+
+    if point_layer.metadata["pause_2D_vector_update"]:
+        return
+
+    if lines is None or edge_width is None:
+        raw_swc = point_layer.metadata["raw_swc"]
+        df = parse_swc_content(raw_swc)
+
+        lines, r = create_line_data_from_swc_data(df)
+
+    # when updating the shape layer directly, the previous data
+    # is not removed correctly. So we remove it first
+    point_layer.metadata["shape_layer"].data = []
+    point_layer.metadata["shape_layer"].add_lines(lines, edge_width=r)
 
 
 def bind_layers_with_events(point_layer, shape_layer):
@@ -147,10 +183,7 @@ def event_add_points(event):
 
         if new_parents != -1:
             new_lines, new_r = create_line_data_from_swc_data(df)
-            event.source.metadata["shape_layer"].data = []
-            event.source.metadata["shape_layer"].add_lines(
-                new_lines, edge_width=new_r
-            )
+            update_edges(event.source, new_lines, new_r)
 
 
 def event_move_points(event):
@@ -165,8 +198,7 @@ def event_move_points(event):
         new_swc, new_lines, df = move_points(raw_swc, indices, new_pos, df)
 
         event.source.metadata["raw_swc"] = new_swc
-        event.source.metadata["shape_layer"].data = new_lines
-        # event.source.metadata["shape_layer"].edge_width = df
+        update_edges(event.source, new_lines)
         event.source.metadata["swc_data"] = df
 
 
@@ -181,10 +213,7 @@ def event_remove_points(event):
         new_swc, new_lines, new_r, df = remove_points(raw_swc, indices, df)
 
         event.source.metadata["raw_swc"] = new_swc
-        event.source.metadata["shape_layer"].data = []
-        event.source.metadata["shape_layer"].add_lines(
-            new_lines, edge_width=new_r
-        )
+        update_edges(event.source, new_lines, new_r)
         event.source.metadata["swc_data"] = df
 
 
@@ -221,10 +250,7 @@ def event_update_point_properties(event):
     )
 
     event.source.metadata["raw_swc"] = new_swc
-    # when updating the shape layer directly, the previous data
-    # is not removed correctly. So we remove it first
-    event.source.metadata["shape_layer"].data = []
-    event.source.metadata["shape_layer"].add_lines(new_lines, edge_width=new_r)
+    update_edges(event.source, new_lines, new_r)
     event.source.metadata["swc_data"] = df
 
 
@@ -264,10 +290,7 @@ def event_add_edge(layer, indices=None, sort=True):
     new_swc, new_lines, new_r, df = add_edge(raw_swc, indices, df)
 
     layer.metadata["raw_swc"] = new_swc
-    # when updating the shape layer directly, the previous data
-    # is not removed correctly. So we remove it first
-    layer.metadata["shape_layer"].data = []
-    layer.metadata["shape_layer"].add_lines(new_lines, edge_width=new_r)
+    update_edges(layer, new_lines, new_r)
     layer.metadata["swc_data"] = df
 
 
@@ -293,8 +316,5 @@ def event_remove_edge(layer, sort=True):
     new_swc, new_lines, new_r, df = remove_edge(raw_swc, indices, df)
 
     layer.metadata["raw_swc"] = new_swc
-    # when updating the shape layer directly, the previous data
-    # is not removed correctly. So we remove it first
-    layer.metadata["shape_layer"].data = []
-    layer.metadata["shape_layer"].add_lines(new_lines, edge_width=new_r)
+    update_edges(layer, new_lines, new_r)
     layer.metadata["swc_data"] = df
