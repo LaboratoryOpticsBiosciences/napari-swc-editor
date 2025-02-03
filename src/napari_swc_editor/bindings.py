@@ -62,18 +62,12 @@ def add_napari_layers_from_swc_content(
             "Ctrl_activated": False,  # link input from keyboard
             "widget_link_activated": False,  # link input from widget
             # delay the update of the vector layer used for faster loading of the swc file
-            "pause_2D_vector_update": viewer.dims.events.ndisplay == 2,
         },
     }
 
     point_layer = viewer.add_points(points, **add_kwargs_points)
 
     # only update the vector layer when the 3D viewer is active for faster loading
-    viewer.dims.events.ndisplay.connect(
-        lambda e: point_layer.metadata.update(
-            {"pause_2D_vector_update": e.value == 2}
-        )
-    )
     viewer.dims.events.ndisplay.connect(
         lambda e: update_edges(point_layer) if e.value == 3 else None
     )
@@ -92,7 +86,9 @@ def update_edges(point_layer, lines=None, edge_width=None):
         Points layer
     """
 
-    if point_layer.metadata["pause_2D_vector_update"]:
+    # if the shape layer is not visible, do not update the edges
+    # this is for faster loading of the swc file
+    if point_layer.metadata["shape_layer"].visible is False:
         return
 
     if lines is None or edge_width is None:
